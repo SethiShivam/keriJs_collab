@@ -27,7 +27,7 @@ class Signer extends Crymat {
     let seedKeypair;
     //    console.log("COde inside signer is ========>",code)
     try {
-      console.log('Raw inside Signer is --------->', code);
+      // console.log('Raw inside Signer is --------->', code);
       super(raw, qb64, null, code);
     } catch (error) {
       if (code === derivationCodes.oneCharCode.Ed25519_Seed) {

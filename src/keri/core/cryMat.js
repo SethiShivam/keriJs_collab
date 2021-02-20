@@ -1,13 +1,13 @@
 /* eslint-disable no-underscore-dangle */
-const Base64 = require("urlsafe-base64");
-const codeAndLength = require("./derivationCode&Length");
-const { b64ToInt, intToB64 } = require("./../help/stringToBinary");
+const Base64 = require('urlsafe-base64');
+const codeAndLength = require('./derivationCode&Length');
+const { b64ToInt, intToB64 } = require('../help/stringToBinary');
 // const util = require("util");
 // const encoder = new util.TextEncoder("utf-8");
 /**
  * @description CRYPTOGRAPHC MATERIAL BASE CLASS
  * @subclasses  provides derivation codes and key event element context specific
- * @Properties 
+ * @Properties
  *         .code  str derivation code to indicate cypher suite
         .raw   bytes crypto material only without code
         .pad  int number of pad chars given raw
@@ -20,7 +20,7 @@ class Crymat {
     qb64 = null,
     qb2 = null,
     code = codeAndLength.oneCharCode.Ed25519N,
-    index = 0
+    index = 0,
   ) {
     /*
           Validate as fully qualified
@@ -34,36 +34,35 @@ class Crymat {
             and assign .raw
         Else when qb64 or qb2 provided extract and assign .raw and .code
         */
-    console.log("raw ===================>",raw)
+
     if (raw) {
       if (!(Buffer.isBuffer(raw) || Array.isArray(raw))) {
         throw new Error(`Not a bytes or bytearray, raw= ${raw}.`);
       }
 
       const pad = this._pad(raw);
-      console.log("value of pad is ------>",pad)
       if (
         !(
-          (pad === 1 &&
-            Object.values(JSON.stringify(codeAndLength.CryOneSizes)).includes(
-              code
-            )) ||
-          (pad === 2 &&
-            Object.values(
-              JSON.stringify(codeAndLength.CryTwoSizes).includes(code)
-            )) ||
-          (pad === 0 &&
-            Object.values(
-              JSON.stringify(codeAndLength.CryFourSizes).includes(code)
+          (pad === 1
+            && Object.values(JSON.stringify(codeAndLength.CryOneSizes)).includes(
+              code,
+            ))
+          || (pad === 2
+            && Object.values(
+              JSON.stringify(codeAndLength.CryTwoSizes).includes(code),
+            ))
+          || (pad === 0
+            && Object.values(
+              JSON.stringify(codeAndLength.CryFourSizes).includes(code),
             ))
         )
       ) {
         throw new Error(`Wrong code= ${code} for raw= ${raw} .`);
       }
       if (
-        (Object.values(codeAndLength.CryCntCodex).includes(code) &&
-          index < 0) ||
-        index > codeAndLength.CRYCNTMAX
+        (Object.values(codeAndLength.CryCntCodex).includes(code)
+          && index < 0)
+        || index > codeAndLength.CRYCNTMAX
       ) {
         throw new Error(`Invalid index=${index} for code=${code}.`);
       }
@@ -74,25 +73,25 @@ class Crymat {
         throw new Error(`Unexpected raw size= ${raw.length} for code= ${code}"
         " not size= ${codeAndLength.cryAllRawSizes[code]}.`);
       }
-      
+
       this.getCode = code;
       this.getIndex = index;
       this.getRaw = raw; // crypto ops require bytes not bytearray
-      console.log("this.getRaw are ==================>",this.getRaw)
+      console.log('', this.getRaw);
     } else if (qb64 != null) {
-      qb64 = qb64.toString("utf-8");
+      qb64 = qb64.toString('utf-8');
       this.exfil(qb64);
     } else if (qb2 != null) {
       this.exfil(Base64.encode(qb2));
     } else {
-      throw new Error("Improper initialization need raw or b64 or b2.");
+      throw new Error('Improper initialization need raw or b64 or b2.');
     }
   }
 
   // eslint-disable-next-line no-underscore-dangle
   // eslint-disable-next-line class-methods-use-this
   _pad(raw) {
-    const reminder = Buffer.byteLength(raw, "binary") % 3; // length for bytes
+    const reminder = Buffer.byteLength(raw, 'binary') % 3; // length for bytes
     if (reminder === 0) {
       return 0;
     }
@@ -100,7 +99,7 @@ class Crymat {
   }
 
   exfil(qb64) {
-    const base64Pad = "=";
+    const base64Pad = '=';
     let cs = 1; // code size
     let codeSlice = qb64.slice(0, cs);
     let index;
@@ -143,11 +142,11 @@ class Crymat {
 
     if (qb64.length !== codeAndLength.cryAllSizes[codeSlice]) {
       throw new Error(
-        `Unexpected qb64 size= ${qb64.length} for code= ${codeSlice} not size= ${codeAndLength.cryAllSizes[codeSlice]}.`
+        `Unexpected qb64 size= ${qb64.length} for code= ${codeSlice} not size= ${codeAndLength.cryAllSizes[codeSlice]}.`,
       );
     }
     const raw = Base64.decode(
-      qb64.slice(cs, qb64.length) + base64Pad.repeat(cs % 4).toString("utf-8")
+      qb64.slice(cs, qb64.length) + base64Pad.repeat(cs % 4).toString('utf-8'),
     );
 
     if (raw.length !== Math.floor(((qb64.length - cs) * 3) / 4)) {
@@ -155,13 +154,14 @@ class Crymat {
     }
 
     this.getCode = codeSlice;
-    this.getRaw = Buffer.from(raw, "binary"); // encode
+    this.getRaw = Buffer.from(raw, 'binary'); // encode
     // eslint-disable-next-line radix
     this.getIndex = parseInt(index);
     this.getqb64 = qb64;
   }
 
   infil() {
+    // console.log("VALUES INSIDE INFIL ARE : ",this.getRaw, this.getCode, this.getIndex);
     let l = null;
     let full = this.getCode;
 
@@ -175,7 +175,7 @@ class Crymat {
     // Validate pad for code length
     if (full.length % 4 !== pad) {
       throw new Error(
-        `Invalid code = ${this.getCode} for converted raw pad = ${this.pad}.`
+        `Invalid code = ${this.getCode} for converted raw pad = ${this.pad()}.`,
       );
     }
 
@@ -198,7 +198,7 @@ class Crymat {
         """
      */
   qb64b() {
-    return Buffer.from(this.qb64(), "binary"); // encode
+    return Buffer.from(this.qb64(), 'binary'); // encode
   }
 
   qb2() {
@@ -210,7 +210,7 @@ class Crymat {
          # decode self.code as bits and prepend to self.raw
          */
 
-    return Base64.decode(Buffer.from(this.infil(), "binary")).toString();
+    return Base64.decode(Buffer.from(this.infil(), 'binary')).toString();
     // check here
   }
 

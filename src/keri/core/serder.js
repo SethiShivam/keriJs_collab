@@ -84,7 +84,7 @@ class Serder {
 
   sniff(raw) {
     let [major, minor, kind, size] = '';
-    if (raw.length < MINSNIFFSIZE) throw new Error('"Need more bytes."');
+    if (raw.length < MINSNIFFSIZE) {throw new Error('"Need more bytes."'); }
 
     const versionPattern = Buffer.from(
       'KERI(?<major>[0-9a-f])(?<minor>[0-9a-f])(?<kind>[A-Z]{4})(?<size>[0-9a-f]{6})_',
@@ -141,6 +141,7 @@ class Serder {
     if (raw.length < size) throw new Error('Need more bytes');
     if (kind === Serials.json) {
       try {
+        console.log("value of Raw is ------------>",size)
         ked = JSON.parse(raw.slice(0, size));
       } catch (error) {
         throw new Error(error);
@@ -159,7 +160,7 @@ class Serder {
       }
     } else ked = null;
 
-    console.log("ked, kind, version, size ===============>",ked, kind, version, size)
+    // console.log("ked, kind, version, size ===============>",ked, kind, version, size)
     return [ked, kind, version, size];
   }
 
@@ -225,7 +226,7 @@ class Serder {
 
     const vs = versify(version, kind, size);
     //  raw = Buffer.from(raw,'binary')
-    console.log("Value of raw before parsing to JSON",response);
+    // console.log("Value of raw before parsing to JSON",response);
     raw = JSON.parse(raw);
     raw.vs = vs;
     const traw = JSON.stringify(raw);

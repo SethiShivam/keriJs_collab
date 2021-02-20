@@ -1,8 +1,12 @@
+// "use strict";
+
 const fs = require('fs-extra')
 const os = require('os');
 const path = require('path');
+// const lmdb = require('lmdb-store');
 const lmdb = require('node-lmdb');
 const _ = require('lodash')
+
 var Set = require("collections/set");
 const { pad } = require('./util')
 const util = require('util');
@@ -27,7 +31,7 @@ class Databaser {
      * @param {*} temp   temp is boolean If True then use temporary head pathname  instead of
                 headDirPath if any or default headDirPath
      */
-  constructor(headDirPath = null, name = 'main', temp = false) {
+    constructor(headDirPath = null, name = 'main', temp = false) {
 
         let HeadDirPath = "/var"
         let TailDirPath = "keri/db"
@@ -147,23 +151,23 @@ class Databaser {
      */
     putVal(db, key, value) {
         try {
-            console.log('INSIDE PUTVALUE :')
+            // console.log('INSIDE PUTVALUE :')
             let dbi = this.env.openDbi({
                 name: db,
                 create: true,// will create if database did not exist,
                 dupSort: true,
             })
-            console.log("\nDB INITIALIZED:")
+            // console.log("\nDB INITIALIZED:")
             let txn = this.env.beginTxn();
-            console.log("\nKEY :", key.toString())
-                console.log("Inside if")
-                txn.putBinary(dbi, key, value, { keyIsBuffer: true,overwrite:false });
-                console.log("value successfully added")
-                txn.commit();
-                dbi.close();
+            // console.log("\nKEY :", key.toString())
+            // console.log("Inside if")
+            txn.putBinary(dbi, key, value, { keyIsBuffer: true, overwrite: false });
+            // console.log("value successfully added")
+            txn.commit();
+            dbi.close();
 
-                return true
-            }  catch (error) {
+            return true
+        } catch (error) {
             console.log("\n PUTVAL ERROR:", error)
             return false
         }
@@ -229,15 +233,15 @@ class Databaser {
 
         let dbi = this.env.openDbi({
             name: db,
-            dupSort: true,
+            // dupSort: true,
             // create : true
         })
         try {
             // key = encoder.encode(key)
-            let txn = this.env.beginTxn();
-            console.log("Value of Key is ==================>", key.toString())
-            var data = txn.getBinary(dbi, key);
-            console.log("Data is --------------->", data.toString())
+            // console.log("VALUE OF KEY IS = ",key.toString())
+                let txn = this.env.beginTxn();
+                var data = txn.getBinary(dbi, key);
+            // console.log("Data is --------------->", data)
             txn.commit()
             dbi.close();
             // this.env.close();
@@ -248,6 +252,30 @@ class Databaser {
         }
     }
 
+
+
+    getAllVal(db, key) {
+
+        let dbi = this.env.openDbi({
+            name: db,
+            dupSort: true,
+            // create : true
+        })
+        try {
+            // key = encoder.encode(key)
+            let txn = this.env.beginTxn();
+            // console.log("Value of Key is ==================>", key.toString())
+            var data = txn.getBinary(dbi, key);
+            // console.log("Data is --------------->", data)
+            txn.commit()
+            dbi.close();
+            // this.env.close();
+            return data
+        } catch (error) {
+            console.log("getVal ERROR :\n", error)
+            return false
+        }
+    }
     delVal(db, key) {
 
         let dbi = this.env.openDbi({
@@ -281,14 +309,14 @@ class Databaser {
                 create: true, // will create if database did not exist
                 // dupSort: true,
             })
-            console.log('\nDB initialized successfully :')
-            console.log('TOTAL SIGNATURES ARE :', vals.length)
+            // console.log('\nDB initialized successfully :')
+            // console.log('TOTAL SIGNATURES ARE :', vals.length)
             let txn = this.env.beginTxn();
 
             for (let val in vals) {
-                txn.putBinary(dbi, key, vals[val], { keyIsBuffer: true ,dupdata: true})
+                txn.putBinary(dbi, key, vals[val], { keyIsBuffer: true, dupdata: true })
             }
-            console.log("values successfully added")
+            // console.log("values successfully added")
             txn.commit()
             dbi.close()
             return true
@@ -309,7 +337,7 @@ class Databaser {
      * @param {*} db db is opened named sub db with dupsort=True
      * @param {*} key key is bytes of key within sub db's keyspace
      */
-    async getVals(db, key) {
+    getVals(db, key) {
 
         try {
             let dbi = this.env.openDbi({
@@ -317,25 +345,25 @@ class Databaser {
                 dupSort: true,
 
             })
-            console.log('DB INITIALIZED')
+            // console.log('DB INITIALIZED')
             let txn = this.env.beginTxn();
 
             let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true });
             let vals = []
 
-            console.log("cursor.goToRange(key) ==================>", '\n')
+            // console.log("cursor.goToRange(key) ==================>", '\n')
 
-            console.log("Inside If condition")
+            // console.log("Inside If condition")
             if (cursor.goToRange(key)) {
                 for (var found = (cursor.goToRange(key) === key); found !== null; found = cursor.goToNextDup()) {
-                    await cursor.getCurrentBinary(function (key, value) {
+                    cursor.getCurrentBinary(function (key, value) {
                         // console.log("value is ------->",value.toString())
                         vals.push(value)
                     })
                 }
 
             }
-            console.log("value ===========>", vals.toString())
+            // console.log("value ===========>", vals.toString())
             txn.commit()
             dbi.close()
             // this.env.close();
@@ -522,6 +550,9 @@ class Databaser {
 
         let dups = this.getVals(db, key)
 
+        if (dups.length == 0 || dups == false) {
+            dups = []
+        }
         let dbi = this.env.openDbi({
             name: db,
             create: true, // will create if database did not exist
@@ -529,9 +560,26 @@ class Databaser {
         })
         try {
             let txn = this.env.beginTxn();
-            console.log("Value of Dup ------- is ----->", dups)
-            if (!dups.includes(val)) {
-                console.log("VALUE INSIDE DUPE DOSTnt exist =========>")
+        
+            // console.log("value is ======>",val)
+            // console.log("Value of Dup ------- is ----->",dups.length)
+            if(dups.length == 0){
+              var  counter = 0
+            }else {
+                for(let i = 0 ; i < dups.length ;i++){
+                    if(dups[i].toString() == val.toString()){
+                     counter = 1
+                    // console.log("value  exist in dup")
+                    }else {
+                        // console.log("value doesnt exist in dup")
+                        counter = 0
+                    }
+                }
+            }
+
+
+            if (counter == 0) {
+                // console.log("VALUE INSIDE DUPE DOSTnt exist =========>")
 
                 txn.putBinary(dbi, key, Buffer.from(val, 'binary'), { overwrite: false, keyIsBuffer: true })
             }
@@ -571,19 +619,21 @@ class Databaser {
                 name: db,
                 dupSort: true
             })
-    
+
             let txn = this.env.beginTxn({ buffers: true });
             let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true });
             let vals_ = []
-
-            // console.log("cursor.goToRange(key) ================================>",cursor.goToRange(key).toString())
+            let key_ = []
+            // console.log("\n\n\n\n\nvalue of key is --------->",key.toString())
+            console.log("cursor.goToRange(key) ================================>",cursor.goToRange(key).toString())
             if (cursor.goToRange(key)) {
                 for (var found = (cursor.goToRange(key) === key); found !== null; found = cursor.goToNextDup()) {
                     cursor.getCurrentBinary(function (key, data) {
                         data = data.slice(7, data.length)
-
+                        
+                        key_.push(key)
                         vals_.push(data)
-                        // console.log("value is ------->",vals_)
+                        
                         // console.log()
                     })
                 }
@@ -592,7 +642,7 @@ class Databaser {
 
             txn.commit()
             dbi.close()
-                console.log("vals_ data is : ",vals_)
+            // console.log("vals_ using getIOValues is ------->",vals_[0].toString(),'\n',key_[0].toString())
             return vals_
         } catch (error) {
             console.log("getIOValues ERROR :", error)
@@ -617,65 +667,115 @@ class Databaser {
      * @param {*} key       key is bytes of key within sub db's keyspace
      * @param {*} val       val is bytes of value to be written
      */
- async   addIOVal(db, key, vals) {
+    async addIOVal(db, key, vals,flag) {
 
-        let dups =  this.getIOValues(db, key)
-    
-        if (dups == false) {
-            console.log("VALUES ARE NOT PRESENT INSIDE DB")
-            dups = []
+
+
+        if(flag =true){
+            console.log("INSIDE FLAG - TRUE")
+        return    this.addIOVAL1(db,key, vals)
         }
+else{
+    console.log("INSIDE FLAG - FALSE")
+    let dups = this.getIOValues(db, key)
 
-   for(let i = 0 ; i < dups.length ; i++){
-       console.log("INSIDE FORLOOP",dups[i].toString())
-       if(dups[i].toString() == vals.toString()){
-                              console.log("VALUE ALREADY EXIST")
-                //    txn.abort()
-                //    dbi.close()
-                   return false
-       }
-   }
-        try {
-
-            let dbi = this.env.openDbi({
-                name: db,
-                create: true, // will create if database did not exist
-                // dupSort: true
-            })
-            console.log("Database Successfully opened")
-            let txn = this.env.beginTxn();
-            // let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true});
-            let count = 0
-            let result = false
-            let val,val_ = null
-            let count_pad = 0
-                if (count > MaxForks) { `Too many recovery forks at key = ${key}` }
-
-
-                count_pad = pad(count, 6)
-                count_pad = count_pad + '.'
-                val_ = Buffer.concat([Buffer.from(count_pad, 'binary'), Buffer.from(vals, 'binary')])
-               txn.putBinary(dbi, key, val_, { keyIsBuffer: true ,dupdata: true})
-            
-            
-
-            console.log("\nDATA SUCCESSFULLY ADDED :")
-            console.log("\nTOTAL COUNTS : ", count)
-
-            txn.commit()
-            dbi.close()
-            return true
-        } catch (error) {
-            console.log("ADDIOVAL ERROR:", error)
-            return false
-        }
-
+    if (dups == false) {
+        console.log("VALUES ARE NOT PRESENT INSIDE DB")
+        dups = []
     }
 
+    for (let i = 0; i < dups.length; i++) {
+        console.log("INSIDE FORLOOP", dups[i].toString())
+        if (dups[i].toString() == vals.toString()) {
+            console.log("VALUE ALREADY EXIST" ,vals.toString(),'\n\n',key.toString())
+
+            return false
+        }
+    }
+
+  return   this.addIOVAL1(db,key, vals)
+}
+
+        // try {
+
+        //     let dbi = this.env.openDbi({
+        //         name: db,
+        //         create: true, // will create if database did not exist
+        //         // dupSort: true
+        //     })
+        //     console.log("Database Successfully opened")
+        //     let txn = this.env.beginTxn();
+        //     // let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true});
+        //     let count = 0
+        //     let result = false
+        //     let val, val_ = null
+        //     let count_pad = 0
+        //     if (count > MaxForks) { `Too many recovery forks at key = ${key}` }
+
+
+        //     count_pad = pad(count, 6)
+        //     count_pad = count_pad + '.'
+        //     val_ = Buffer.concat([Buffer.from(count_pad, 'binary'), Buffer.from(vals, 'binary')])
+        //     console.log("vALUE BEING ADDED IS :",val_.toString())
+        //     console.log("KEY BEING ADDED IS :",key.toString())
+        //     txn.putBinary(dbi, key, val_, { keyIsBuffer: true, dupdata: true })
+
+
+
+        //     console.log("\nDATA SUCCESSFULLY ADDED :")
+        //     console.log("\nTOTAL COUNTS : ", count)
+
+        //     txn.commit()
+        //     dbi.close()
+        //     return true
+        // } catch (error) {
+        //     console.log("ADDIOVAL ERROR:", error)
+        //     return false
+        // }
+
+}
 
 
 
 
+async addIOVAL1(db,key, vals){
+    try {
+
+        let dbi = this.env.openDbi({
+            name: db,
+            create: true, // will create if database did not exist
+            // dupSort: true
+        })
+        // console.log("Database Successfully opened")
+        let txn = this.env.beginTxn();
+        // let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true});
+        let count = 0
+        let result = false
+        let val, val_ = null
+        let count_pad = 0
+        if (count > MaxForks) { `Too many recovery forks at key = ${key}` }
+
+
+        count_pad = pad(count, 6)
+        count_pad = count_pad + '.'
+        val_ = Buffer.concat([Buffer.from(count_pad, 'binary'), Buffer.from(vals, 'binary')])
+        console.log("vALUE BEING ADDED IS :",val_.toString())
+        console.log("KEY BEING ADDED IS :",key.toString())
+        txn.putBinary(dbi, key, val_, { keyIsBuffer: true, dupdata: true })
+
+
+
+        console.log("\nDATA SUCCESSFULLY ADDED :")
+        console.log("\nTOTAL COUNTS : ", count)
+
+        txn.commit()
+        dbi.close()
+        return true
+    } catch (error) {
+        console.log("ADDIOVAL ERROR:", error)
+        return false
+    }
+}
 
 
 
@@ -748,8 +848,8 @@ class Databaser {
             }
             txn.commit()
             dbi.close()
-            console.log("\nDATA SUCCESSFULLY ADDED :")
-            console.log("\nTOTAL COUNTS : ", count)
+            // console.log("\nDATA SUCCESSFULLY ADDED :")
+            // console.log("\nTOTAL COUNTS : ", count)
             return true
         } catch (error) {
             console.log("putIOVals ERROR:", error)
@@ -790,38 +890,61 @@ class Databaser {
         })
 
         try {
-            let txn = this.env.beginTxn();
-            let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true });
-            let vals = null
-            console.log("checking key value ==============>", key.toString())
-            console.log("Inside getIOValsLast =========>", cursor.goToRange(key))
-            if (cursor.goToRange(key)) {
-
-
-                cursor.goToLastDup()
-                console.log("cursor.goToLastDup()", cursor.goToLastDup().toString())
-                cursor.getCurrentBinary(function (key, data) {
-                    // do something with data
-                    console.log("value is ------->", key.toString(), data.toString())
-                    vals = data.slice(7, data.length)
-                })
-                // for (var found = (cursor.goToRange(key) === key); found !== null; found = cursor.goToNextDup()) {
-                //     cursor.getCurrentBinary(function(key, data) {
-                //         // do something with data
-                //         console.log("value is ------->",key,value.toString())
-                //         vals.push(value)
-                //     }) }
-            }
+            let txn = this.env.beginTxn({ readOnly: true });
+            let cursor = new lmdb.Cursor(txn, dbi, { keyIsBuffer: true ,dupdata: true});
+            var vals = null
+            // for (var found = (cursor.goToKey(key) === key); found !== null; found = cursor.goToNextDup()) {
+            //     cursor.getCurrentBinary(function(key, data) {
+            //         // do something with data
+            //         console.log("NEXT DUPS VALUES ARE :" ,'\n',data.toString())
+            //         vals = data.slice(7, data.length)
+            //     }) }
+                console.log("cursor.goToKey(key) ======================+>",cursor.goToKey(key))
+                // cursor.goToKey(key).toString()
+            try{
+                for (var found = (cursor.goToKey(key) === key); found !== null; found = cursor.goToLastDup()) {
+                    cursor.getCurrentBinary(function(key, data) {
+                        // do something with data
+                        // console.log("value for all DUPS ARE : ------->" ,'\n',data.toString())
+                        vals = data.slice(7, data.length)
+                    }) }
 
 
             txn.commit()
             dbi.close()
-
+            // console.log("LAST VALUE IS =========>", vals.toString())
             return vals
-        }
+        
+                }
+            catch(error){
+                      // console.log("error after getting last dup is :",error)
+                    // console.log("VALUE OF LAST DUPE IS =========>",vals.toString())
+                    txn.commit()
+                    dbi.close()
+                return vals
+            }
+                   
+            // console.log("cursor.goToRange(key) ======================+>",cursor.goToRange(key).toString())
+            // if (cursor.goToRange(key)) {
+               
+            //         if(cursor.goToLastDup(key)){
 
+            //             cursor.getCurrentBinary(function (key, data) {
+            //                 // do something with data
+            //                 console.log("goToLastDup is ------->", data.toString())
+            //                 vals = data.slice(7, data.length)
+            //             })
+            
+            //         console.log("cursor.goToLastDup()", cursor.goToLastDup().toString())
+
+            //         }else {
+            //             return null
+            //         }
+                    
+    // }
+}
         catch (error) {
-            console.log("getIOValsLast ERROR :", error)
+            console.log("\n\ngetIOValsLast ERROR :", error)
             return false
         }
 
@@ -1027,6 +1150,12 @@ class Databaser {
     }
 }
 
+
+
+
+
+
+
 function resolveHome(filepath) {
     if (filepath[0] === '~') {
         return path.join(process.env.HOME, filepath.slice(1));
@@ -1042,6 +1171,7 @@ function dgkey(pre, dig) {
         dig = Buffer.from(dig, 'binary')
 
     let dot_buf = Buffer.from('.', 'binary')
+    // console.log("pre==========+>",dig.toString())
     return Buffer.concat([pre, dot_buf, dig])
 }
 
@@ -1063,7 +1193,7 @@ function snkey(pre, sn) {
     sn = Buffer.from(sn, 'binary')
     let arr = [pre, sn]
 
-    console.log("\nSN KEY : ", (Buffer.concat(arr)).toString())
+    // console.log("\nSN KEY : ", (Buffer.concat(arr)).toString())
     return Buffer.concat(arr)
 }
 
@@ -1229,7 +1359,7 @@ class Logger extends Databaser {
      * @param {*} val 
      */
     putEvt(key, val) {
-        console.log("\nINITIALIZING PUTVAL :")
+        // console.log("\nINITIALIZING PUTVAL (PUT EVENT):")
         return this.putVal(Buffer.from('evts.', 'binary'), key, val)
     }
 
@@ -1365,7 +1495,7 @@ class Logger extends Databaser {
      */
 
     putSigs(key, vals) {
-        console.log("\n\nINITIALIZING PUT SIGNATURES DB :")
+        // console.log("\n\nINITIALIZING PUT SIGNATURES DB :")
         return this.putVals(Buffer.from('sigs.', 'binary'), key, vals)
     }
 
@@ -1645,7 +1775,7 @@ class Logger extends Databaser {
      * @param {*} key 
      */
     getVrcs(key) {
-        console.log('CALLING getVals :')
+        // console.log('CALLING getVals :')
         return this.getVals(Buffer.from('vrcs.', 'binary'), key)
     }
 
@@ -1741,7 +1871,8 @@ class Logger extends Databaser {
      */
     getVres(key) {
 
-        return this.getVals(Buffer.from('vres.', 'binary'), key)
+    return  this.getVals(Buffer.from('vres.', 'binary'), key)
+    //   console.log("value of a is =======>",a)
     }
 
 
@@ -1812,10 +1943,10 @@ class Logger extends Databaser {
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
      */
-   async addKe(key, val) {
-        console.log(" CALLING  addIOVal  \n")
-    return await this.addIOVal(Buffer.from('kels.', 'binary'), key, val)
-      //  console.log("RESPONSE IS =========>",response)
+    async addKe(key, val,flag) {
+        // console.log(" CALLING  addIOVal  \n")
+        return await this.addIOVal(Buffer.from('kels.', 'binary'), key, val,flag)
+        //  console.log("RESPONSE IS =========>",response)
     }
 
 
@@ -1839,7 +1970,8 @@ class Logger extends Databaser {
        Duplicates are retrieved in insertion order.
      */
     getKeLast(key) {
-        return this.getIOValsLast(Buffer.from('kels.', 'binary'), key)
+        return   this.getIOValsLast(Buffer.from('kels.', 'binary'), key)
+     
     }
 
 

@@ -95,7 +95,6 @@ class SigMat {
 
   exfil(qb64) {
     const BASE64_PAD = '=';
-    console.log("qb64.length =============>",qb64.length)
     if (qb64.length < MINSIGSIZE) // # Need more bytes
     { throw new Error('Need more bytes.'); }
     let cs = 1; // code size

@@ -45,7 +45,7 @@ function extractElementValues(element, values) {
     if((element instanceof Array) && !(typeof(element) == 'string')){
             // console.log("Inside if ==")
                 for(let k in element)
-                extractElementValues(k, values)
+                extractElementValues(element[k], values)
 
 
 
@@ -57,9 +57,9 @@ function extractElementValues(element, values) {
     // else  {
     //     throw `Unexpected element value =  ${element} Not a str.`
     // }
-  }catch(error){
-      console.log("ERROR caused while calling extractElementValues")
-            throw error
+  } catch (error) {
+    console.log("ERROR caused while calling extractElementValues");
+    throw new Error(error) 
     }
 
     return val_array

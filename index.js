@@ -1,6 +1,5 @@
 
-'use strict`
-
+`use strict`
 const core = require("./src/keri/core/core");
 const cryMat = require("./src/keri/core/cryMat");
 const derivationCode = require("./src/keri/core/derivationCode&Length");

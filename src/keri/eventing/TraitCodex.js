@@ -31,7 +31,7 @@ class TraitCodex {
      * @description Returns serder of inception event message.
         Utility function to automate creation of inception events.
      */
-    incept(keys,
+  incept(keys,
         code = null,
         version = Versionage,
         kind = Serials.json,
@@ -41,7 +41,6 @@ class TraitCodex {
         wits = null,
         cnfg = null,
     ) {
-
         let vs = versify(version, kind, 0)
         let sn = 0
         let ilk = Ilks.icp
@@ -53,20 +52,24 @@ class TraitCodex {
         }
         if (typeof(sith) == 'number') {
             if (sith < 1 || sith > keys.length)
-                throw `Invalid sith = ${sith} for keys = ${keys}`
+                throw new Error(`Invalid sith = ${sith} for keys = ${keys}`)
         }
         else
-            throw `invalid sith = ${sith}.`
+            throw new Error(`invalid sith = ${sith}.`) 
 
 
-        if (!wits)
+        if (wits === null) {
             wits = []
+        }
+            
 
-        if ((isSorted(wits)).length != wits.length)
-            `Invalid wits = ${wits}, has duplicates.`
+        // if ((wits).length != wits.length) {
+        //     throw new Error( `Invalid wits = ${wits}, has duplicates.`)
+        // }
+           
 
         if (toad == null) {
-            console.log("toad  = null",wits.length)
+            // console.log("toad  = null",wits.length)
             if (wits.length == 0) {
                 toad = 0
             } else
@@ -75,16 +78,22 @@ class TraitCodex {
 
         if (wits.length != 0) {
             console.log("Inside wits ------->",wits)
-            if (toad < 1 || toad > wits.length)
-                throw `Invalid toad = ${toad} for wits = ${wits}`
+            if (toad < 1 || toad > wits.length) {
+                throw new Error(`Invalid toad = ${toad} for wits = ${wits}`)
+            }
+                
         } else {
-            if (toad != 0)
-                throw `Invalid toad = ${toad} for wits = ${wits}`
+            if (toad != 0) {
+                throw new Error(`Invalid toad = ${toad} for wits = ${wits}`) 
+            }
+                
         }
 
 
-        if (!cnfg)
+        if (!cnfg) {
             cnfg = []
+        }
+            
 
         let ked = {
             vs: vs,         // version string
@@ -100,14 +109,16 @@ class TraitCodex {
         }
         // console.log(" =========================  Keys are ------------------>",code,keys.length )
         if (code == null && keys.length == 1) {
+            console.log("inside code == null && keys.length == 1 ===================")
             prefixer = new Prefixer(null, derivationCodeLength.oneCharCode.Ed25519N, null, null, null, keys[0])
         }
         else {
-            // console.log("========================CODE BEFORE PREFIX IS =======================",code)
+            console.log("========================ked BEFORE PREFIXER IS =======================",ked)
             prefixer = new Prefixer(null, code, ked)
         }
 
         ked["pre"] = prefixer.qb64()
+        console.log("KED['PRE IS ]=================>",ked["pre"]);
         return new Serder(null, ked)
     }
 
@@ -142,7 +153,7 @@ class TraitCodex {
             `Invalid sn =  ${sn} for rot.`
         }
         if (sith == null) {
-            console.log("INSIDE Sith == null")
+            // console.log("INSIDE Sith == null")
             sith =   Math.max(1, Math.ceil(keys.length / 2))
         }
         if (typeof(sith) == 'number') {
@@ -153,9 +164,11 @@ class TraitCodex {
             throw `invalid sith = ${sith}.`
 
 
-        if (!wits) wits = []
+        if (!wits) {
+            wits = []} 
 
         let witset = wits
+            console.log("LENGTH OF WITST IS =======>",witset)
         if ((witset).length != wits.length)
             `Invalid wits = ${wits}, has duplicates.`
 
@@ -163,19 +176,19 @@ class TraitCodex {
         if (!cuts) cuts = []
         
         cutset = cuts
-        console.log("cutset --------------->",witset,cutset)
+        // console.log("cutset --------------->",witset,cutset)
         if(!(_.isEqual(witset,cutset)))
         throw `Invalid cuts = ${cuts}, not all members in wits.`
 
         if (!adds) adds = []
 
          addset = adds
-        console.log("value of adds is ------->",addset)
+        // console.log("value of adds is ------->",addset)
     
         if(addset.length != adds.length )
         throw  `Invalid adds =  ${adds}, has duplicates.`
 
-        console.log("Value of cutset and addset are : =======>",cutset,addset)
+        // console.log("Value of cutset and addset are : =======>",cutset,addset)
         if((cutset.length > 0) && (addset.length > 0)) throw `Intersecting cuts = ${cuts} and  adds = ${adds}.`
         
         if((witset.length > 0) && (addset.length > 0)) throw `Intersecting wits = ${wits} and  adds = ${adds}.`
@@ -187,7 +200,7 @@ class TraitCodex {
 
 
         if(!toad){
-            console.log("TOAD ABSENT ",newitset)
+            // console.log("TOAD ABSENT ",newitset)
             if(newitset.length ==0){toad = 0}
             else {toad = Math.max(1, Math.ceil(newitset.length / 2))}
         }
@@ -216,7 +229,7 @@ class TraitCodex {
             data :data,  // # list of seals                      // # list of config ordered mappings may be empty
         }
 
-
+        // console.log("kked before going to serder is #########################")
         return new Serder(null, ked)
     }
 
@@ -333,6 +346,7 @@ class TraitCodex {
             dig:dig,        // # qb64 digest of receipted event
             seal:seal         //  # event seal: pre, dig
         }
+            // console.log("ked inside CHIT =  ",ked)
         return new Serder(null, ked)
 
        }
@@ -341,6 +355,7 @@ class TraitCodex {
 
 function isSorted(array) {
     const limit = array.length - 1;
+    console.log("value of limit is =",limit) 
     for (let i = 0; i < limit; i++) {
         const current = array[i], next = array[i + 1];
         if (current > next) { return false; }

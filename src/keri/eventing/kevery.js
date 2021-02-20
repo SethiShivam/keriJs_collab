@@ -14,7 +14,7 @@ const {Sigcounter} = require('../core/SigCounter')
 const {Sigver} = require('../core/sigver')
 const {Siger} = require('../core/siger')
 const { Serials, Versionage, IcpLabels, Ilks } = require('../core/core')
-const {SealEvent} = require('../eventing/util')
+// const {SealEvent} = require('../eventing/util')
 const _ = require('lodash');
 const { range } = require("lodash");
 const { Verfer } = require("../core/verfer");
@@ -66,25 +66,26 @@ class Kevery {
  * @description  Process all messages from incoming message stream, ims, when provided
 Otherwise process all messages from .ims
  */
-     async   processAll(ims = null) {
+        processAll(ims = null) {
             
         if (ims) {
-            console.log("IMS NOT NULL:")
+            // console.log("IMS NOT NULL:")
             if (!(ims instanceof Buffer)) {
                 ims = Buffer.from(ims,'binary')
             } 
-        }else {
-            console.log("IMS = NULL")
+        }
+        else {
+            // console.log("IMS = NULL")
             ims = this.ims
         }
         let ims_ = [ims]
-        console.log("\nims_ ===============================>",ims_.length)
+        // console.log("\nims_ ===============================>",ims_[0].toString())
 
-        console.log("PROCESSING INSCEPTION MESSAGES :")
+        // console.log("PROCESSING INSCEPTION MESSAGES :")
                for (let i = 0 ; i < ims_.length ; i ++) {
                 try {
                    
-             this.processOne(ims_[i], this.framed)
+             this.processOne(ims_[i], this.framed,true)
                 } catch (error) {
                     console.log("\nERROR pROCESSING IMS:",error)
                     throw error
@@ -107,14 +108,19 @@ Otherwise process all messages from .ims
                         until end-of-stream. This is useful for framed packets with
                          one event and one set of attached signatures per invocation.
      */
-    processOne(ims, framed = true) {
+   async processOne(ims, framed = true,flag = false) {
         let serder, nsigs ,counter = null
         let sigers = []
-       console.log("\n\nIncoming message sent by controller is : ",ims.toString())
+
+
+    //    console.log("\n\nIncoming message sent by controller is : ",ims.toString())
         try {
             console.log("\n\nCALLING SERDER TO SERIALIZE OR DESERIALIZE MESSAGE :")
             serder = new Serder(ims)
-            serder.set_raw(ims)
+            let raw = serder.raw()
+            serder.set_raw(raw)
+            
+            console.log("SERDER DIGEST INSIDE PROCESSONE IS =======>",serder.dig().toString())
         } catch (err) {
             throw `Error while processing message stream = ${err}`
         }
@@ -124,16 +130,18 @@ Otherwise process all messages from .ims
         if (!_.isEqual(version, Versionage)) {
             throw `Unsupported version = ${version}, expected ${Versionage}.`
         }
-        console.log("\nSTRIPPING EVENTS FROM INCOMING MESSAGE")
+        // console.log("\nSTRIPPING EVENTS FROM INCOMING MESSAGE")
         ims =  ims.slice(serder.size(),ims.length)
+        // console.log("\nIMS AFTER STRIPPING  IS =====>")
         let ilk = serder.ked()['ilk']  //# dispatch abased on ilk (Types of events)
-        console.log("Type of event:",ilk)
+        // console.log("Type of event:",ilk)
         let arr = new Array(Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt)
         if (arr.includes(ilk)) {
 
             try {
                 console.log('\n\nEXTRACTING SIGNATURES AND COUNTING THEM')
                 counter = new Sigcounter(null, ims)
+                // console.log('COUNTER IN ICP :',counter,counter.count())
                 nsigs = counter.count()
                 ims = ims.slice((counter.qb64()).length, ims.length)
             } catch (error) {
@@ -148,10 +156,12 @@ Otherwise process all messages from .ims
                     //  # check here for type of attached signatures qb64 or qb2
                     let  args = [null,null,null,derivationCodes.SigTwoCodex.Ed25519,0,ims]
                    var siger = new Siger(null,...args)
+                //    console.log("siger.push ICP ##:",siger)
                    siger.set_verfer(siger.verfer())
                     sigers.push(siger)
                     
                     ims =  ims.slice(0, (siger.qb64()).length)
+                    // console.log("ims after strippint of signatures ====",ims.toString())
                    // STRIPPING OF SIGNATURES
                 }
             }
@@ -162,6 +172,7 @@ Otherwise process all messages from .ims
                         let  args = [null,null,null,derivationCodes.SigTwoCodex.Ed25519,0,ims]
                         siger = new Siger(null,...args)
                         sigers.push(siger)
+                        console.log("INSDE FRAMED",siger)
                         ims =  ims.slice(0, (siger.qb64()).length)
                     }
                 }
@@ -170,11 +181,11 @@ Otherwise process all messages from .ims
             if (!sigers) {
                 throw `Missing attached signature(s).`
             }
-            console.log("\nSIGNATURES FOUND : ")
+            // console.log("\nSIGNATURES FOUND : ")
             console.log("\nPROCESSING (DESERIALIZED MESSAGE + SIGNATURE) EVENTS AFTER COLLECTING SIGNATURES:")
 
-          this.processEvent(serder, sigers)
-            console.log("################## VALUE OF ILKS is ###########",serder.ked()['ilk'])
+          this.processEvent(serder, sigers,flag)
+            // console.log("################## VALUE OF ILKS is ###########",serder.ked()['ilk'])
         } else if (ilk == Ilks.rct) {
 
 
@@ -215,12 +226,10 @@ Otherwise process all messages from .ims
 
 
         } else if (ilk == Ilks.vrc) {
-            console.log("INSIDE Ilks.vrc",ims)
             let nsigs = null
             try {
                 // raw=null, qb64b=null, qb64=null, qb2=null, code=codeAndLength.CryCntCodex.Base64,index=null, count=null
                counter = new Sigcounter(null, ims,null,null,derivationCodes.SigCntCodex.Base64)  //# qb64
-            //    console.log("INSIDE TRY CATCH ==============>",a)
                 nsigs = counter.count()
                 
                 ims = ims.slice((counter.qb64()).length, ims.length)
@@ -230,12 +239,13 @@ Otherwise process all messages from .ims
             }
                 // console.log("nsigs =========================>",a.count())
             if (nsigs) {
-                console.log("NSIGS :",ims.toString())
+                // console.log("NSIGS :",ims.toString())
                 for (let i in range(nsigs)) {
                     let  args = [null,null,null,derivationCodes.SigTwoCodex.Ed25519,0,ims]
                     let siger = new Siger(null,...args)
                     
                     siger.set_verfer(siger.verfer())
+                    // console.log("sigers.push ## :",sigers)
                     sigers.push(siger)
                     ims = ims.slice(0, (siger.qb64()).length)
                 }
@@ -271,25 +281,27 @@ Otherwise process all messages from .ims
             ilk  # rct
             dig  # qb64 digest of receipted event
      */
-    processEvent(serder, sigers) {
-      console.log("\nINSIDE PROCESS EVENT : ")
+  async  processEvent(serder, sigers,flag) {
+    //   console.log("\nINSIDE PROCESS EVENT : ")
         let prefixer, dig, kever, dgkey_, sno = null
         let signers = []
         let signers_icp = []
         let ked = serder.ked()
-    
+        // console.log("KED INSIDE PROCESSEVENT IS =",ked)
         serder.set_ked(ked)
+        // console.log("serder INSIDE PROCESSEVENT IS =",serder)
         var date = new Date()
 
         try {
-            console.log("\n\nked PRE IS :>  ",ked["pre"])
+            // console.log("\n\nked PRE IS :>  ",ked)
+            // console.log("\n\nked dig IS :>  ",ked["dig"])
             console.log("\n CHECKING IF PRE IN EVENT IS VALID OR NOT \n")
             prefixer = new Prefixer(null, derivationCodes.oneCharCode.Ed25519N, null, null, null, ked["pre"])
         } catch (error) {
             throw `Invalid pre = ${ked["pre"]}.`
 
         }
-console.log("BASE64 VERSION OF PREFIXER: ======================>",prefixer.qb64())
+// console.log("BASE64 VERSION OF PREFIXER: ======================>")
 console.log("\nCOLLECTING DATA LKE : BASE64 PRE,SERIAL NO,MESSAGE DIGEST")
         let pre = prefixer.qb64()
         let ilk = ked["ilk"]
@@ -306,25 +318,27 @@ console.log("\nCOLLECTING DATA LKE : BASE64 PRE,SERIAL NO,MESSAGE DIGEST")
         }
 
         dig = serder.dig()
+        console.log("##################### DIGEST IS ######################",dig)
 
-
-        if ((!(this.kevers[pre] === pre))) {
+        if (!(pre in this.kevers)) {
             if (ilk == Ilks.icp) {
                 console.log('CALLING KEVER TO VERIFY INCEPTION EVENT ,SIGNATURES  AND PUSH IT TO DB')
                 // # kever init verifies basic inception stuff and signatures
                 // # raises exception if problem adds to KEL Kevers
                 // # create kever from serder
-                kever =   new Kever(serder,sigers, null,this.logger)
+                kever =   new Kever(serder,sigers, null,this.logger,flag)
                 
                 this.kevers[pre] = kever
                 // console.log("this.kevers :", this.kevers)
             } else {
-                console.log("INSIDE  ELSE PART line 305")
+                console.log("INSIDE  ELSE PART line 332")
                 dgkey_ = dgkey(pre, dig)
                     this.logger.putDts(dgkey_, Buffer.from(date.toISOString(),'binary'))
                 for(let siger in sigers){
-                    signers[siger] =   sigers[siger].qb64b()
+                    signers[siger] = sigers[siger].qb64b()
                 }
+
+                // console.log('KEY AND VALUE FOR THE EVENTS ARE :',dgkey_.toString(),'\n',Base64.encode(serder.raw()))
                 console.log("ADDING SIGNATURES======>")
                   this.logger.putSigs(dgkey_,signers)
                 console.log("ADDING putEvt======>")
@@ -332,18 +346,22 @@ console.log("\nCOLLECTING DATA LKE : BASE64 PRE,SERIAL NO,MESSAGE DIGEST")
                 console.log("ADDING addOoe======>")
                   this.logger.addOoe(snkey(pre, sn), dig)
             }
-        } else {
+        } 
+        else {
             console.log("INSIDE  ELSE PART line 316")
-            if (ilk == Ilks.icp) {
-                console.log("INSIDE  if PART line 318")
+            if (ilk == Ilks.icp) { 
+                console.log("INSIDE  if icp  PART line 318")
                 dgkey_ = dgkey(pre, dig)
                 this.logger.putDts(dgkey_, Buffer.from(date.toISOString(),'binary'))
                 for(let siger in sigers){
-                    signers_icp[siger] =   sigers[siger].qb64b()
+                    signers_icp[siger] = sigers[siger].qb64b()
                 }
-                // console.log("Pushing SIGNATURES AND EVENTS --------->")
+                console.log("Pushing SIGNATURES AND EVENTS --------->")
                  this.logger.putSigs(dgkey_, signers_icp)
+                 console.log("INSIDE LINE 318  DIG IS =",dgkey_)
+                 console.log("Calling put event =================>")
                 this.logger.putEvt(dgkey_, serder.raw())
+                console.log("Calling addLde event =================>")
                 this.logger.addLde(snkey(pre, sn), dig)
             } else {
 console.log("INSIDE  ELSE PART line 329")
@@ -358,23 +376,28 @@ console.log("INSIDE  ELSE PART line 329")
                         signers[siger] =   sigers[siger].qb64b()
                     }
                     this.logger.putSigs(dgkey_, signers)
+                    console.log("INSIDE LINE 329  DIG IS =",dgkey_)
                     this.logger.putEvt(dgkey_, serder.raw())
                     this.logger.addOoe(snkey(pre, sn), dig)
                 } else if ((sn == sno) ||
                     (ilk == Ilks.rot && kever.lastEst.sn < sn <= sno)) {
-                        console.log("\nUPDATING KEVER :")
-                    kever.update(serder = serder, sigers = sigers)
+
+                       console.log("INSIDE  ELSE PART line 382")
+                    kever.update(serder, sigers,null,null,flag)
 
                 } else {
-                    console.log("INSIDE  ELSE PART line 349")
+                    console.log("INSIDE  ELSE PART line 349",sn)
                     dgkey_= dgkey(pre, dig)
                     this.logger.putDts(dgkey_, Buffer.from(date.toISOString(),'binary'))
 
                     for(let siger in sigers){
                         signers[siger] =   sigers[siger].qb64b()
                     }
+                    console.log("CALLING PUT SIGS 396")
                     this.logger.putSigs(dgkey_,signers)
+                    console.log("CALLING putEvt SIGS 398")
                     this.logger.putEvt(dgkey_, serder.raw())
+                    console.log("CALLING addLde SIGS 400")
                     this.logger.addLde(snkey(pre, sn), dig)
                 }
 
@@ -423,6 +446,8 @@ async    processReceipt(serder, sigvers){
     if(ldig){
 
         ldig = ldig.toString('utf-8')
+        // console.log("ldig ======>",ldig.toString())
+                // console.log("\n ldig ######################======>",dig)
         if(ldig != dig){
             throw `Stale receipt at sn = ${ked["sn"]}`
         }
@@ -469,12 +494,12 @@ async    processReceipt(serder, sigvers){
 
  */
     processChit(serder, sigers){
-
+        let SealEvent = {pre:"" ,dig: ""}
             let dig,seal,sealet,snKey_,dgKey_,ldig,raw,rekever,triplet = null
        let ked = serder.ked()
        serder.set_ked(ked)
        
-        serder.set_raw(serder.raw())
+        // serder.set_raw(serder.raw())
        let pre = ked["pre"]
        let  sn = ked["sn"]
 
@@ -487,35 +512,32 @@ async    processReceipt(serder, sigvers){
        }catch(error){
            throw `Invalid sn = ${sn}`
        }
-       console.log("ked ============>",ked)
+    //    console.log(" ################# processChit ked ============>",ked["dig"])
        dig = ked["dig"]
         SealEvent.pre = ked["seal"].pre
         SealEvent.dig = ked["seal"].dig
         // seal = SealEvent
-        console.log("seal ==============>" , '\n\n\n',SealEvent)
        sealet = [Buffer.from(SealEvent.pre,'binary'), Buffer.from(SealEvent.dig,'binary')]
        sealet = Buffer.concat(sealet)
 
        snKey_ = snkey(pre,sn)
-       console.log("snKey =====>",snKey_.toString())
-       ldig = this.logger.getKeLast(snKey_)  // # retrieve dig of last event at sn.
-
+    //    console.log("snKey =====>",pre.toString(),'\n\n',sn)
+       ldig = this.logger.getKeLast(snKey_)  // # retrieve dig of last event at sn
        dgKey_ = dgkey(pre,dig)
        raw = this.logger.getEvt(dgKey_) // # retrieve receipted event at dig
-    //    ldig = 'EmYgkUTsZkHtqGS-hd99wy_WYQJHHx9g0YqYV--j5je0'
-       ldig =  this.logger.getKes(snKey_)
-       for(let i = 0 ; i < ldig.length ;i++){
-           console.log(ldig[i].toString())
+    //    if(ldig  || ldig != null)
+    
+       if(ldig != null && ldig != false ){
+        //    console.log("Inside  if condition of ldig")
+        //    console.log("ldig ======>",ldig.toString())
+        //    console.log("\ndig ======>",dig)
+           ldig = ldig.toString('utf-8')
+        if((ldig != dig)){
+            throw `Stale receipt at sn = ${ked}`
+           }
        }
-      
-       if(ldig){
-        //    ldig = ldig.toString()  
-           console.log("LDIG and DIG are =================>",ldig.toString(),dig)    
-           if(ldig[0].toString() != dig){
-               throw `Stale receipt at sn = ${ked["sn"]}`
-           }     
-       }else {
-        if(raw){
+       else {
+        if(raw !=null){
             throw `Bad receipt for sn = ${ked["sn"]} and dig = ${dig}.`
         }
 
@@ -526,13 +548,13 @@ async    processReceipt(serder, sigvers){
     //    # if ldig is not None then raw is not None and vice versa
     //    # if ldig == dig then eraw must not be none
 
-    if (ldig !=null && raw !=null && SealEvent.pre in this.kevers){
-
+    if (ldig != null && raw !=null && SealEvent.pre in this.kevers){
+        // console.log("INSIDE IF CONDITION ldig,raw,SealEvent are present")
         rekever = this.kevers[SealEvent.pre]
 
         if (rekever.lastEst.dig != SealEvent.dig)
-        throw `Stale receipt for pre = ${pre} dig = ${dig} from validator = ${seal.pre}.`
-        console.log("raw ========================>",raw.toString())
+        throw `Stale receipt for pre = ${SealEvent.pre} dig = ${SealEvent.dig} from validator = ${SealEvent.pre}.`
+        // console.log("raw ========================>",raw.toString())
         // raw = Buffer.from(raw,'binary')
        
         for (let siger in sigers ){
@@ -541,14 +563,19 @@ async    processReceipt(serder, sigvers){
             }
             sigers[siger].set_verfer(rekever.verfers[sigers[siger].index()] )
             // sigers[siger].verfer = rekever.verfers[sigers[siger].index()] 
-            // console.log("sigers[siger] =====================>",raw,'\n\n',(sigers[siger].raw()))
+            // console.log("sigers[siger] =====================>",'\n\n',sigers[siger])
+            // console.log("SIGER.RAW IS ------->",sigers[siger].raw().toString('utf-8'))
             if(sigers[siger].verfer().verify(sigers[siger].raw(), raw)){
-                triplet = sealet + sigers[siger].qb64b()
-                // console.log("triplet ======================+>",triplet)
+                triplet = [sealet , sigers[siger].qb64b()]
+                triplet = Buffer.concat(triplet)
+                // console.log("sealet ===================>",(sigers[siger].qb64b()).toString())
+                // console.log("sigers[siger].qb64b() ===================>",sealet.toString())
+                // console.log("triplet ======================+>",triplet.toString())
                     this.logger.addVrc(dgKey_,triplet)
             }
         }
     }else {
+        // console.log("INSIDE ESCROW DATA")
         for (let siger in sigers ){
             triplet = sealet + sigers[siger].qb64b()
             this.logger.addVre(dgKey_, triplet)

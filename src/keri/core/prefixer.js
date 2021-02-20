@@ -7,7 +7,7 @@ const { extractValues } = require('./utls');
 const derivationCodes = require('./derivationCode&Length');
 const { Verfer } = require('./verfer');
 const { Sigver } = require('./sigver');
-const { Ilks, IcpLabels, DipLabels } = require('./core');
+const { Ilks, IcpLabels, DipLabels, IcpExcludes,DipExcludes } = require('./core');
 const { Serder } = require('./serder');
 const { Signer } = require('./signer');
 
@@ -40,24 +40,29 @@ class Prefixer extends Crymat {
     qb64 = null,
     qb2 = null,
   ) {
-    let derive = null;
+    let deriveFunc = null;
 
     try {
       super(raw, qb64, qb2, code);
     } catch (error) {
+      console.log("Inside catch error :",error)
       if (!(ked || code)) throw error; // throw error if no ked found
 
       if (code === derivationCodes.oneCharCode.Ed25519N) {
-        derive = DeriveBasicEd25519N;
+        console.log("DeriveBasicEd25519N")
+        deriveFunc = DeriveBasicEd25519N;
       } else if (code === derivationCodes.oneCharCode.Ed25519) {
-        derive = DeriveBasicEd25519;
+        console.log("DeriveBasicEd25519")
+        deriveFunc = DeriveBasicEd25519;
       } else if (code === derivationCodes.oneCharCode.Blake3_256) {
-        derive = DeriveDigBlake3_256;
+        console.log("DeriveDigBlake3_256")
+        deriveFunc = DeriveDigBlake3_256;
       } else if (code === derivationCodes.twoCharCode.Ed25519) {
-        derive = DeriveSigEd25519;
+        console.log("DeriveSigEd25519")
+        deriveFunc = DeriveSigEd25519;
       } else throw new Error(`Unsupported code = ${code} for prefixer.`);
 
-      const verfer = derive(ked, seed, secret); // else obtain AID using ked
+      const verfer = deriveFunc(ked, seed, secret); // else obtain AID using ked
       super(verfer.raw, null, null, verfer.code, 0);
     }
 
@@ -307,22 +312,37 @@ function DeriveBasicEd25519N(ked) {
 * @param {*} secret secret or private key
 */
 function DeriveDigBlake3_256(ked) {
-  let labels = null;
+  let labels = [];
+  let objKeys = [];
   let values = null;
   let ser = null;
   let dig = null;
   const { ilk } = ked;
-  if (ilk === Ilks.icp) labels = IcpLabels;
+  console.log("VALUE OFK KED BEFORE EXTRACTING ABLES IS = ",ked)
+
+  if (ilk === Ilks.icp) {
+    objKeys = Object.keys(ked);
+    for(let keys in objKeys){
+      if(!(IcpExcludes.includes(objKeys[keys]))){
+        labels.push(objKeys[keys])
+      }
+    }
+    // labels = IcpLabels;
+  } 
+  // if (ilk === Ilks.icp) labels = IcpLabels;
   else if (ilk === Ilks.dip) labels = DipLabels;
   else throw new Error(`Invalid ilk = ${ilk} to derive pre.`);
 
   ked.pre = 'a'.repeat(
     derivationCodes.CryOneSizes[derivationCodes.oneCharCode.Blake3_256],
   );
-  const serder = new Serder(null, ked);
+  console.log('ked.pre ===============>',labels)
+  const serder = new Serder(null, ked);   //Buffer.from('', 'binary')
+  // serder.set_raw(serder.getRaw);
   ked = serder.ked();
-  serder.set_ked(ked);
-
+  serder.set_ked(ked)
+  // serder.set_kind()
+//  serder.set_raw(serder.getRaw);
   // # put in dummy pre to get size correct
   for (const l in labels) {
     if (Object.values(ked).includes(l)) {
@@ -331,6 +351,7 @@ function DeriveDigBlake3_256(ked) {
   }
 
   values = extractValues(ked, labels);
+  console.log("EXTRACTED VALUES ARE : ",values);
   ser = Buffer.from(''.concat(values), 'utf-8');
   dig = blake3.createHash(ser).digest();
   return { raw: dig, code: derivationCodes.oneCharCode.Blake3_256 };

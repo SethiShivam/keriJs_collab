@@ -91,6 +91,7 @@ class Nexter extends Diger {
     keys = null,
     ked = null,
   ) {
+    console.log("value of ser is =",ser);
     let _ser;
     let _sith;
     let _keys ;
@@ -98,7 +99,7 @@ class Nexter extends Diger {
       [_ser, _sith, _keys ] = this.derive(sith, keys, ked);
     }
 
-    return this.verify(_ser, this.raw());
+    return this._verify(_ser, this.raw());
     // console.log('ser ===============>', ser.toString());
     // if (!ser) {
     //   [getSer, getSith, getKeys] = this.derive(sith, keys, ked);

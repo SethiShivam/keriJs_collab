@@ -6,6 +6,10 @@ const Serialage = { json: "", mgpk: "", cbor: "" };
 const Vstrings = Serialage;
 const Serials = { json: "JSON", mgpk: "MGPK", cbor: "CBOR" };
 
+// # element labels to exclude in digest or signature derivation from inception icp
+const IcpExcludes = ["pre"]
+// # element labels to exclude in digest or signature derivation from delegated inception dip
+const DipExcludes = ["pre"]
 const Ilks = {
   icp: "icp",
   rot: "rot",
@@ -56,7 +60,7 @@ const DipLabels = [
 // let VERFMT = `KERI${hexString} ${two} ${three}_`   /// version format string
 const VERFULLSIZE = 17;
 const MINSNIFFSIZE = 12 + VERFULLSIZE;
-const MINSIGSIZE = 4 ;
+const MINSIGSIZE = 4;
 /**
  * @description  It will return version string
  */
@@ -134,4 +138,6 @@ module.exports = {
   Vstrings,
   MINSNIFFSIZE,
   MINSIGSIZE,
+ IcpExcludes,
+ DipExcludes,
 };
