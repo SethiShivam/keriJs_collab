@@ -900,7 +900,7 @@ async addIOVAL1(db,key, vals){
             //         vals = data.slice(7, data.length)
             //     }) }
                 console.log("cursor.goToKey(key) ======================+>",cursor.goToKey(key))
-                // cursor.goToKey(key).toString()
+                cursor.goToKey(key).toString()
             try{
                 for (var found = (cursor.goToKey(key) === key); found !== null; found = cursor.goToLastDup()) {
                     cursor.getCurrentBinary(function(key, data) {

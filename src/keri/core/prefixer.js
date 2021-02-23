@@ -6,6 +6,7 @@ const { Crymat } = require('./cryMat');
 const { extractValues } = require('./utls');
 const derivationCodes = require('./derivationCode&Length');
 const { Verfer } = require('./verfer');
+const Base64 = require('urlsafe-base64');
 const { Sigver } = require('./sigver');
 const { Ilks, IcpLabels, DipLabels, IcpExcludes,DipExcludes } = require('./core');
 const { Serder } = require('./serder');
@@ -45,7 +46,7 @@ class Prefixer extends Crymat {
     try {
       super(raw, qb64, qb2, code);
     } catch (error) {
-      console.log("Inside catch error :",error)
+      console.log("Inside catch error :",error);
       if (!(ked || code)) throw error; // throw error if no ked found
 
       if (code === derivationCodes.oneCharCode.Ed25519N) {
@@ -353,7 +354,14 @@ function DeriveDigBlake3_256(ked) {
   values = extractValues(ked, labels);
   console.log("EXTRACTED VALUES ARE : ",values);
   ser = Buffer.from(''.concat(values), 'utf-8');
-  dig = blake3.createHash(ser).digest();
+  const hasher = blake3.createHash();
+// let ser = "asdfasdfasdfadsf";
+ dig = hasher.update(ser).digest({length: 64 })
+//blake3.hash(ser);
+console.log("digest is ------------------>", dig.toString('hex'));
+
+  // dig = blake3.createHash(ser).digest();
+  console.log("VALUE OF DIGEST IS = ",Base64.encode(dig));
   return { raw: dig, code: derivationCodes.oneCharCode.Blake3_256 };
 }
 

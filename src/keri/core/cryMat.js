@@ -34,8 +34,9 @@ class Crymat {
             and assign .raw
         Else when qb64 or qb2 provided extract and assign .raw and .code
         */
-
+       console.log("VALUE OF RAW  BEFORE CALLING CONSTRUCTOR-------------------------->",raw);
     if (raw) {
+      console.log("\n Value of Raw exist \n");
       if (!(Buffer.isBuffer(raw) || Array.isArray(raw))) {
         throw new Error(`Not a bytes or bytearray, raw= ${raw}.`);
       }
@@ -73,15 +74,16 @@ class Crymat {
         throw new Error(`Unexpected raw size= ${raw.length} for code= ${code}"
         " not size= ${codeAndLength.cryAllRawSizes[code]}.`);
       }
-
+      console.log("VALUE OF RAW -------------------------->",raw);
       this.getCode = code;
       this.getIndex = index;
       this.getRaw = raw; // crypto ops require bytes not bytearray
-      console.log('', this.getRaw);
     } else if (qb64 != null) {
+      console.log("\n Value of qb64 exist \n");
       qb64 = qb64.toString('utf-8');
       this.exfil(qb64);
     } else if (qb2 != null) {
+      console.log("\n Value of qb2 exist \n");
       this.exfil(Base64.encode(qb2));
     } else {
       throw new Error('Improper initialization need raw or b64 or b2.');
@@ -145,16 +147,15 @@ class Crymat {
         `Unexpected qb64 size= ${qb64.length} for code= ${codeSlice} not size= ${codeAndLength.cryAllSizes[codeSlice]}.`,
       );
     }
-    const raw = Base64.decode(
+    const derivedRaw = Base64.decode(
       qb64.slice(cs, qb64.length) + base64Pad.repeat(cs % 4).toString('utf-8'),
     );
 
-    if (raw.length !== Math.floor(((qb64.length - cs) * 3) / 4)) {
+    if (derivedRaw.length !== Math.floor(((qb64.length - cs) * 3) / 4)) {
       throw new Error(`Improperly qualified material = ${qb64}`);
     }
-
     this.getCode = codeSlice;
-    this.getRaw = Buffer.from(raw, 'binary'); // encode
+    this.getRaw = Buffer.from(derivedRaw, 'binary'); // encode
     // eslint-disable-next-line radix
     this.getIndex = parseInt(index);
     this.getqb64 = qb64;
@@ -164,21 +165,20 @@ class Crymat {
     // console.log("VALUES INSIDE INFIL ARE : ",this.getRaw, this.getCode, this.getIndex);
     let l = null;
     let full = this.getCode;
-
     if (Object.values(codeAndLength.CryCntCodex).includes(this.getCode)) {
       l = codeAndLength.CryCntIdxSizes[this.getCode];
       full = `${this.getCode}${intToB64(this.getIndex, l)}`;
     }
 
     const pad = this.pad();
-
+    console.log("VALUE OF PAD = ",pad)
     // Validate pad for code length
     if (full.length % 4 !== pad) {
       throw new Error(
         `Invalid code = ${this.getCode} for converted raw pad = ${this.pad()}.`,
       );
     }
-
+    console.log("RETURNING VALUE IS = ",Base64.encode(this.getRaw));
     return full + Base64.encode(this.getRaw);
   }
 

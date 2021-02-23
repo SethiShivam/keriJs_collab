@@ -2,7 +2,7 @@
 const { Serialage, Serials, versify, Ilks,Versionage } = require('../core/core')
 const _ = require('lodash')
 const { Prefixer } = require('../core/prefixer')
-const { Serder } = require('../core/serder')
+const { Serder } = require('../core/serder');
 const derivationCodeLength = require('../core/derivationCode&Length')
 const ICP_LABELS = ["vs", "pre", "sn", "ilk", "sith", "keys", "nxt",
     "toad", "wits", "cnfg"]
@@ -116,7 +116,7 @@ class TraitCodex {
             console.log("========================ked BEFORE PREFIXER IS =======================",ked)
             prefixer = new Prefixer(null, code, ked)
         }
-
+            console.log("prefixer ===============>",prefixer)
         ked["pre"] = prefixer.qb64()
         console.log("KED['PRE IS ]=================>",ked["pre"]);
         return new Serder(null, ked)

@@ -120,7 +120,7 @@ Otherwise process all messages from .ims
             let raw = serder.raw()
             serder.set_raw(raw)
             
-            console.log("SERDER DIGEST INSIDE PROCESSONE IS =======>",serder.dig().toString())
+            console.log("SERDER DIGEST INSIDE PROCESSONE IS =======>")
         } catch (err) {
             throw `Error while processing message stream = ${err}`
         }
@@ -265,7 +265,7 @@ Otherwise process all messages from .ims
             if (!sigers) {
                 throw `Missing attached signature(s) to receipt.`
             }
-
+            console.log("CALLING PROCESS CHIT ==================>")
             this.processChit(serder, sigers)
         } else {
             throw `Unexpected message ilk = ${ilk}.`
@@ -447,7 +447,7 @@ async    processReceipt(serder, sigvers){
 
         ldig = ldig.toString('utf-8')
         // console.log("ldig ======>",ldig.toString())
-                // console.log("\n ldig ######################======>",dig)
+                console.log("\n ldig ######################======>",dig)
         if(ldig != dig){
             throw `Stale receipt at sn = ${ked["sn"]}`
         }
@@ -512,7 +512,7 @@ async    processReceipt(serder, sigvers){
        }catch(error){
            throw `Invalid sn = ${sn}`
        }
-    //    console.log(" ################# processChit ked ============>",ked["dig"])
+       console.log(" ################# processChit ked ============>",ked["seal"].dig)
        dig = ked["dig"]
         SealEvent.pre = ked["seal"].pre
         SealEvent.dig = ked["seal"].dig
@@ -523,6 +523,7 @@ async    processReceipt(serder, sigvers){
        snKey_ = snkey(pre,sn)
     //    console.log("snKey =====>",pre.toString(),'\n\n',sn)
        ldig = this.logger.getKeLast(snKey_)  // # retrieve dig of last event at sn
+       console.log("ldig ================+>",ldig.toString())
        dgKey_ = dgkey(pre,dig)
        raw = this.logger.getEvt(dgKey_) // # retrieve receipted event at dig
     //    if(ldig  || ldig != null)
@@ -531,9 +532,11 @@ async    processReceipt(serder, sigvers){
         //    console.log("Inside  if condition of ldig")
         //    console.log("ldig ======>",ldig.toString())
         //    console.log("\ndig ======>",dig)
-           ldig = ldig.toString('utf-8')
+           ldig = ldig.toString()
+           console.log("value of Ldig and dig are ======>",ldig , dig ,ked["seal"].dig)
         if((ldig != dig)){
-            throw `Stale receipt at sn = ${ked}`
+            
+            throw `Stale receipt at sn = ${dig},     ${ldig}                ${ked["seal"].dig}`
            }
        }
        else {

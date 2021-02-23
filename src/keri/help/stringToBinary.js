@@ -1,4 +1,4 @@
-const Deque = require("collections/deque");
+        const Deque = require("collections/deque");
 const derivationCodeLength = require('../core/derivationCode&Length')
 function string2Bin(s) {
     var b = new Array();

@@ -271,8 +271,15 @@ class Serder {
     this.getKind = kind;
     this.getVersion = version;
     this.getSize = size;
+
+//     const hasher = blake3.createHash();
+// let ser = "asdfasdfasdfadsf";
+// let dig = blake3.hash(ser);
+// console.log("digest is ------------------>", dig.toString('hex'));
+// console.log("HASHER ------------------>", hasher.update(ser).digest('hex',{length: 64 }));
+//hasher.update(ser).digest({length: 64 })
     const hasher = blake3.createHash();
-    const digest = hasher.update(this.getRaw).digest('');
+    const digest = hasher.update(this.raw()).digest({length: 64 })
     this.getDiger = new Diger(digest, null, codeAndLength.oneCharCode.Blake3_256);
   }
 
